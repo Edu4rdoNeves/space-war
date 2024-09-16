@@ -34,28 +34,33 @@ func NewPlayer(game *Game) *Player {
 
 func (p *Player) Update() {
 	speed := 6.0
+	bounds := p.image.Bounds()
+	halfWidth := float64(bounds.Dx()) / 2
 
 	if ebiten.IsKeyPressed(ebiten.KeyLeft) {
 		p.position.X -= speed
-	} else if ebiten.IsKeyPressed(ebiten.KeyRight) {
+		if p.position.X < 0 {
+			p.position.X = 0
+		}
+	}
+
+	if ebiten.IsKeyPressed(ebiten.KeyRight) {
 		p.position.X += speed
+		if p.position.X+float64(bounds.Dx()) > screenWidth {
+			p.position.X = screenWidth - float64(bounds.Dx())
+		}
 	}
 
 	p.laserLoadingTimer.Update()
 	if ebiten.IsKeyPressed(ebiten.KeySpace) && p.laserLoadingTimer.IsReady() {
 		p.laserLoadingTimer.Reset()
 
-		bounds := p.image.Bounds()
-		halfWidth := float64(bounds.Dx() / 2)
-		halfHight := float64(bounds.Dy() / 2)
-
 		spawnLaserPosition := Vector{
 			p.position.X + halfWidth,
-			p.position.Y - halfHight/2,
+			p.position.Y,
 		}
 
 		laser := NewLaser(spawnLaserPosition)
-
 		p.game.AddLasers(laser)
 	}
 
