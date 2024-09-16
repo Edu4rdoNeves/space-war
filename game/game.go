@@ -2,26 +2,31 @@ package game
 
 import (
 	"fmt"
+	"math/rand"
 
 	"github.com/Edu4rdoNeves/space-war/assets"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
 type Game struct {
-	player           *Player
-	lasers           []*Laser
-	meteors          []*Meteor
-	meteorSpawnTimer *Timer
-	stars            []*Stars
-	starsSpawnTimer  *Timer
-	score            int
-	inMenu           bool
-	position         Vector
-	btnImg           *ebiten.Image
+	player            *Player
+	lasers            []*Laser
+	meteors           []*Meteor
+	meteorSpawnTimer  *Timer
+	stars             []*Stars
+	starsSpawnTimer   *Timer
+	planets           []*Planets
+	planetsSpawnTimer *Timer
+	planetSpawnChance float64
+	score             int
+	inMenu            bool
+	position          Vector
+	btnImg            *ebiten.Image
 }
 
 func NewGame() *Game {
 	image := assets.StartSprite
+
 	bounds := image.Bounds()
 	halfWidth := float64(bounds.Dx()) / 2
 	halfHeight := float64(bounds.Dy()) / 2
@@ -32,11 +37,13 @@ func NewGame() *Game {
 	}
 
 	g := &Game{
-		meteorSpawnTimer: NewTimer(24),
-		starsSpawnTimer:  NewTimer(1),
-		inMenu:           true,
-		position:         position,
-		btnImg:           image,
+		meteorSpawnTimer:  NewTimer(24),
+		starsSpawnTimer:   NewTimer(1),
+		planetsSpawnTimer: NewTimer(500),
+		planetSpawnChance: 0.1,
+		inMenu:            true,
+		position:          position,
+		btnImg:            image,
 	}
 	player := NewPlayer(g)
 	g.player = player
@@ -108,6 +115,19 @@ func (g *Game) Update() error {
 		s.Update()
 	}
 
+	g.planetsSpawnTimer.Update()
+	if g.planetsSpawnTimer.IsReady() {
+		if rand.Float64() < g.planetSpawnChance {
+			g.planetsSpawnTimer.Reset()
+
+			p := NewPlanets(g.planets)
+			g.planets = append(g.planets, p)
+		}
+	}
+
+	for _, p := range g.planets {
+		p.Update()
+	}
 	return nil
 }
 
@@ -120,14 +140,18 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	} else {
 
-		g.player.Draw(screen)
-
-		for _, l := range g.lasers {
-			l.Draw(screen)
+		for _, p := range g.planets {
+			p.Draw(screen)
 		}
 
 		for _, s := range g.stars {
 			s.Draw(screen)
+		}
+
+		g.player.Draw(screen)
+
+		for _, l := range g.lasers {
+			l.Draw(screen)
 		}
 
 		for _, m := range g.meteors {
@@ -154,5 +178,7 @@ func (g *Game) Reset() {
 	g.meteorSpawnTimer.Reset()
 	g.stars = nil
 	g.starsSpawnTimer.Reset()
+	g.planets = nil
+	g.planetsSpawnTimer.Reset()
 	g.score = 0
 }
